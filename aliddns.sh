@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # @author Bosco.Liao
 # @version 1.2.0
@@ -50,6 +50,24 @@ getIpv4() {
     else
         echo -n "$ip"
     fi
+}
+
+die () {
+    echo $1
+}
+
+# getIpv6 of local machine
+getIpv6() {
+    ipv6s=`ip -6 addr|grep global|awk -F/ "{print \\$1}"|awk "{print \\$NF}"` || die "$ipv6"
+
+    for ipv6 in $ipv6s
+    do
+      #ipv6 = $ipv6
+      break
+    done
+
+    echo -n "$ipv6"
+
 }
 
 # doGet Action Api_Args
@@ -221,8 +239,8 @@ updateRecordValue() {
     local host="$2"
     local data=""
 
-    echo -e "::"
-    echo -e "Different $arg_type record [$host.$arg_domain ] with value [ $arg_value ] is updating.\n"
+    #echo -e "::"
+    echo -e "Different $arg_type record [$host.$arg_domain ] with value [ $arg_value ] is updating."
 
     if [ 'AAAA' = $arg_type ] 
     then
@@ -251,8 +269,8 @@ addRecord() {
     do
         # host="${tho//\"/''}"
         host=`echo -n "$tho" | tr -d '"'`
-        echo -e "::"
-        echo -e "$arg_type record [ $host.$arg_domain ] with value [ $arg_value ] is adding.\n"
+        #echo -e "::"
+        echo -e "$arg_type record [ $host.$arg_domain ] with value [ $arg_value ] is adding."
 
         # wrapper request data
         if [ 'AAAA' = $arg_type ] 
@@ -320,8 +338,8 @@ execDDNS() {
                         A) #IPv4
                             if test "$value" = "$arg_value"
                             then
-                                echo -e "::"
-                                echo -e "Same $arg_type Record: [ $host.$arg_domain ] with ipv4 [ $value ] -- Don't update.\n"
+                                #echo -e "::"
+                                echo -e "Same $arg_type Record: [ $host.$arg_domain ] with ipv4 [ $value ] -- Don't update."
                             else
                                 updateRecordValue "$recid" "$host"
                             fi
@@ -329,8 +347,8 @@ execDDNS() {
                         AAAA) #IPv6
                             if test "$value" = "$arg_value"
                             then
-                                echo -e "::"
-                                echo -e "Same $arg_type Record: [ $host.$arg_domain ] with ipv6 [ $value ] -- Don't update.\n"
+                                #echo -e "::"
+                                echo -e "Same $arg_type Record: [ $host.$arg_domain ] with ipv6 [ $value ] -- Don't update."
                             else
                                 updateRecordValue "$recid" "$host"
                             fi
@@ -338,8 +356,8 @@ execDDNS() {
                         *) # CNAME,MX,REDIRECT_URL...
                             if test "$value" = "$arg_value"
                             then
-                                echo -e "::"
-                                echo -e "Same $arg_type Record: [ $host.$arg_domain ] with value [ $value ] -- Don't update.\n"
+                                #echo -e "::"
+                                echo -e "Same $arg_type Record: [ $host.$arg_domain ] with value [ $value ] -- Don't update."
                             else
                                 updateRecordValue "$recid" "$host"
                             fi
@@ -371,7 +389,7 @@ ipv4_api_store=('icanhazip.com' 'whatismyip.akamai.com' 'ip.3322.net')
 readonly ipv4_api_store
 
 extranet_ipv4=`getIpv4 "${ipv4_api_store[*]}"`
-extranet_ipv6="" # Automatic detection is not currently supported.
+extranet_ipv6=`getIpv6`
 
 #========================Parse parameters===============================
 #
@@ -406,9 +424,8 @@ done
 #
 #=======================================================================
 echo -e "\n============================================================"
-echo -e "\tCurrent OS: `uname -s` `uname -m` `uname -o` "
-echo -e "\tCurrent Time: `date +'%Y-%m-%d %H:%M:%S'`"
-echo -e "============================================================\n"
+echo -e "Current OS: `uname -s` `uname -m` `uname -o` "
+echo -e "Current Time: `date +'%Y-%m-%d %H:%M:%S'`"
 
 # Checks aliyun api Access Key ID and Access Key Secret.
 if test -z "$access_key_id" -o -z "$access_key_secret"
@@ -443,7 +460,7 @@ fi
 # Default host is '@'.
 if test 0 -eq ${#arg_hosts[@]}
 then
-    echo -e "Parameter[ Host ] was not found. Setting default host: '@'.\n"
+    echo -e "Parameter[ Host ] was not found. Setting default host: '@'."
     arg_hosts=('"@"')
 else
     arg_hosts=(`echo -n "${arg_hosts[*]}" | tr 'A-Z' 'a-z'`) # convert to lowercase
@@ -454,11 +471,11 @@ if test -z "$arg_value"
 then
     case "$arg_type" in
         A) 
-            echo -e "External IPv4: $extranet_ipv4 \n"
+            echo -e "External IPv4: $extranet_ipv4 "
             arg_value="$extranet_ipv4"
             ;;
         AAAA)
-            echo -e "External IPv6: $extranet_ipv6 \n"
+            echo -e "External IPv6: $extranet_ipv6 "
             arg_value="$extranet_ipv6"
             ;;
         *) break;;
@@ -473,9 +490,9 @@ then
 fi
 
 # Print all setting params.
-echo -e "Settting Params: {Domain: $arg_domain, Type: $arg_type, Host: [ ${arg_hosts[@]} ], Value: $arg_value, TTL: $arg_ttl} \n"
+echo -e "Settting Params: {Domain: $arg_domain, Type: $arg_type, Host: [ ${arg_hosts[@]} ], Value: $arg_value, TTL: $arg_ttl}"
 # Execute DDNS service
 execDDNS
 
 # end
-echo -e "\nCompleted!!!"
+echo -e "Completed!!!"
